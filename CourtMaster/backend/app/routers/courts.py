@@ -5,7 +5,6 @@ from .. import models, schemas
 from ..database import get_db
 
 router = APIRouter(
-    prefix="/courts",
     tags=["courts"],
 )
 

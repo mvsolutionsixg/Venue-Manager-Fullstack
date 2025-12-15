@@ -5,11 +5,11 @@ from .. import models, schemas
 from ..database import get_db
 
 router = APIRouter(
-    prefix="/settings",
     tags=["settings"],
 )
 
 @router.get("/", response_model=schemas.Settings)
+@router.get("", include_in_schema=False)
 def read_settings(db: Session = Depends(get_db)):
     from datetime import time
     settings = db.query(models.Settings).first()

@@ -11,7 +11,6 @@ from ..database import get_db
 from .. import models, crud
 
 router = APIRouter(
-    prefix="/reports",
     tags=["reports"],
 )
 
