@@ -5,13 +5,13 @@ from .routers import auth, bookings, reports, courts, settings as settings_route
 
 app = FastAPI(title="Venue Manager API")
 
-# Stable, explicit CORS (root fix)
+# Cors Root Fix
 origins = [
     "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:5176",
+    "http://localhost:5174",  # Fallback vite ports
+    "http://localhost:3000",  # Common React port
     "https://venue-manager-fullstack.onrender.com",
+    "https://venue-manager-fullstack.onrender.com/", # Trailing slash variant
 ]
 
 app.add_middleware(
@@ -20,6 +20,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Routers (no changes to routes themselves)
