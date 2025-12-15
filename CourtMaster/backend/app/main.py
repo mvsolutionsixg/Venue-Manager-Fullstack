@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine, Base
-from .routers import auth, bookings, reports, courts, settings
+from .routers import auth, bookings, reports, courts, settings as settings_router
 from .config import get_settings
 
 # Create FastAPI app
@@ -38,7 +38,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(bookings.router, tags=["bookings"])
 app.include_router(reports.router, prefix="/reports", tags=["reports"])
 app.include_router(courts.router, prefix="/courts", tags=["courts"])
-app.include_router(settings.router, prefix="/settings", tags=["settings"])
+app.include_router(settings_router.router, prefix="/settings", tags=["settings"])
 
 # =========================
 # ROOT
