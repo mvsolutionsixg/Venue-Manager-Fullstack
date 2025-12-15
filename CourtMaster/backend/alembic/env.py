@@ -13,6 +13,12 @@ from app.models import * # noqa
 # access to the values within the .ini file in use.
 config = context.config
 
+from app.config import get_settings
+settings = get_settings()
+# Escape % for ConfigParser interpolation if present
+db_url = settings.DATABASE_URL.replace("%", "%%")
+config.set_main_option("sqlalchemy.url", db_url)
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

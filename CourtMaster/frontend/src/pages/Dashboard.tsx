@@ -81,7 +81,7 @@ export function Dashboard() {
                         <CardTitle>Daily Bookings Trend</CardTitle>
                         <CardDescription>Bookings over the last 30 days</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[300px] min-h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             {charts?.daily && charts.daily.length > 0 ? (
                                 <LineChart data={charts.daily}>
@@ -105,7 +105,7 @@ export function Dashboard() {
                         <CardTitle>Booking Status Distribution</CardTitle>
                         <CardDescription>Breakdown of current booking statuses</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[300px] min-h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             {charts?.status && charts.status.length > 0 ? (
                                 <PieChart>
