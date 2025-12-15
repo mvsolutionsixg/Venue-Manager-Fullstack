@@ -1,0 +1,14 @@
+# in backend folder
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+.idea
+.vscode
+.git
+node_modules
+dist
+build
+
