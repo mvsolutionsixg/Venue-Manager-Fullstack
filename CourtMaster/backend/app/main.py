@@ -1,9 +1,36 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from .routers import auth, bookings, reports, courts, settings as settings_router
+from .database import SessionLocal
+from .models.user import User
+from .services.auth import get_password_hash
 
-app = FastAPI(title="Venue Manager API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Seed database
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.username == "admin").first()
+        if not user:
+            print("Creating default admin user...")
+            hashed = get_password_hash("admin123")
+            user = User(username="admin", password_hash=hashed)
+            db.add(user)
+            db.commit()
+            print("Admin user created.")
+        else:
+            print("Admin user already exists.")
+    except Exception as e:
+        print(f"Error seeding database: {e}")
+    finally:
+        db.close()
+    
+    yield
+    # Shutdown logic if needed
+
+app = FastAPI(title="Venue Manager API", lifespan=lifespan)
 
 # Cors Root Fix
 origins = [
