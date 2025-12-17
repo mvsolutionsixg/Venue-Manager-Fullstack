@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import api from "@/lib/api";
+import { createContext, useContext, useState, useEffect } from "react";
+import type { ReactNode } from "react";
 
 interface AuthContextType {
     token: string | null;
-    login: (token: string, username: string) => void;
+    login: (token: string) => void;
     logout: () => void;
     isAuthenticated: boolean;
 }

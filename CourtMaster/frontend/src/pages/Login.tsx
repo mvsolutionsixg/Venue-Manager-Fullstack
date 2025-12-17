@@ -26,7 +26,7 @@ export default function Login() {
             formData.append("password", password);
 
             const res = await api.post("/auth/token", formData);
-            login(res.data.access_token, username);
+            login(res.data.access_token);
             navigate("/");
         } catch (err: any) {
             console.error("Login error:", err);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, PieChart, Pie, Cell
 } from "recharts";
 import api from "@/lib/api";
@@ -118,7 +118,7 @@ export function Dashboard() {
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {charts?.status.map((entry: any, index: number) => (
+                                        {charts?.status.map((_: any, index: number) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>

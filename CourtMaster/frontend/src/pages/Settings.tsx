@@ -34,10 +34,10 @@ export function Settings() {
                 close_time: closeTime + ":00",
                 slot_duration: slotDuration
             });
-            alert("Settings Saved Successfully!"); // Fallback if no toast
+            toast.success("Settings Saved Successfully!");
         } catch (error) {
             console.error(error);
-            alert("Failed to save settings");
+            toast.error("Failed to save settings");
         } finally {
             setLoading(false);
         }

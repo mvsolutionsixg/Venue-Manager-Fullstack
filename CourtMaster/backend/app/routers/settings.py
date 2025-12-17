@@ -32,7 +32,7 @@ def save_settings(settings: schemas.SettingsCreate, db: Session = Depends(get_db
         for key, value in settings.dict().items():
             setattr(db_settings, key, value)
     else:
-        # Create new
+        # Create new ehioh
         db_settings = models.Settings(**settings.dict())
         db.add(db_settings)
     

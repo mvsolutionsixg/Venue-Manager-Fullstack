@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { format, subDays, addDays } from "date-fns";
 import api from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export function Reports() {
     const [heatmapData, setHeatmapData] = useState<any[]>([]);
-    const [startDate, setStartDate] = useState(subDays(new Date(), 7));
-    const [endDate, setEndDate] = useState(new Date());
+    const [startDate] = useState(subDays(new Date(), 7));
+    const [endDate] = useState(new Date());
 
     useEffect(() => {
         fetchHeatmap();
@@ -29,7 +28,7 @@ export function Reports() {
 
     // Transform data for grid: keys = date, values = { court_id: booked_hours }
     // Actually simplicity: We need a matrix. Rows = Courts, Cols = Dates.
-    const dates = [];
+    const dates: string[] = [];
     let d = startDate;
     while (d <= endDate) {
         dates.push(format(d, "yyyy-MM-dd"));
@@ -39,7 +38,7 @@ export function Reports() {
     const courts = [1, 2, 3]; // From mock or api
 
     const getIntensity = (date: string, courtId: number) => {
-        const entry = heatmapData.find(h => h.date === date && h.court_id === courtId);
+        const entry = heatmapData.find((h: any) => h.date === date && h.court_id === courtId);
         const hours = entry ? entry.booked_hours : 0;
         // Assume max 12 hours
         if (hours === 0) return "bg-emerald-50";
@@ -49,7 +48,7 @@ export function Reports() {
     };
 
     const getValue = (date: string, courtId: number) => {
-        const entry = heatmapData.find(h => h.date === date && h.court_id === courtId);
+        const entry = heatmapData.find((h: any) => h.date === date && h.court_id === courtId);
         return entry ? `${entry.booked_hours}h` : "-";
     };
 
