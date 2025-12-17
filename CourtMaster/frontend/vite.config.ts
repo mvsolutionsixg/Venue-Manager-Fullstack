@@ -4,7 +4,7 @@ import { defineConfig } from "vite"
 
 export default defineConfig({
   plugins: [react()],
-  base: "/CourtMaster/", // 👈 EXACT repo name
+  base: "/", // 👈 EXACT repo name
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
