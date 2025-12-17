@@ -12,6 +12,8 @@ origins = [
     "http://localhost:3000",  # Common React port
     "https://venue-manager-fullstack.onrender.com",
     "https://venue-manager-fullstack.onrender.com/", # Trailing slash variant
+    "https://venue-manager-frontend.onrender.com",
+    "https://venue-manager-frontend.onrender.com/",
 ]
 
 app.add_middleware(
