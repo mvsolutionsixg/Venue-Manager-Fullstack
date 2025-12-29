@@ -11,6 +11,7 @@ export function Settings() {
     const [openTime, setOpenTime] = useState("05:00");
     const [closeTime, setCloseTime] = useState("23:00");
     const [slotDuration, setSlotDuration] = useState(60);
+    const [pricePerHour, setPricePerHour] = useState(400);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -21,6 +22,7 @@ export function Settings() {
                     setOpenTime(res.data.open_time.substring(0, 5));
                     setCloseTime(res.data.close_time.substring(0, 5));
                     setSlotDuration(res.data.slot_duration);
+                    if (res.data.price_per_hour) setPricePerHour(res.data.price_per_hour);
                 }
             })
             .catch(err => console.error("Failed to load settings", err));
@@ -32,7 +34,8 @@ export function Settings() {
             await api.post("/settings/", {
                 open_time: openTime + ":00", // Append seconds for Pydantic Time parsing if needed
                 close_time: closeTime + ":00",
-                slot_duration: slotDuration
+                slot_duration: slotDuration,
+                price_per_hour: pricePerHour
             });
             toast.success("Settings Saved Successfully!");
         } catch (error) {
@@ -87,6 +90,20 @@ export function Settings() {
                                 </Button>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <Label>Price per 60 minutes (₹)</Label>
+                        <Input
+                            type="number"
+                            min="0"
+                            value={pricePerHour}
+                            onChange={(e) => setPricePerHour(Number(e.target.value))}
+                            className="w-full max-w-[200px]"
+                        />
+                        <p className="text-xs text-slate-500">
+                            Revenue will be calculated as: (Booking Duration / 60) × Price
+                        </p>
                     </div>
 
                     <div className="flex justify-end pt-4">

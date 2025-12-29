@@ -82,8 +82,10 @@ def get_dashboard_stats(db: Session, period: str = "overall"):
     else:
         start_date = None # Overall
         
-    # 2. Build Query
-    query = db.query(Booking).filter(Booking.status == "confirmed")
+    # 2. Build Query - Use ILIKE for case insensitive match on status
+    # Note: SQLite (if used) might need func.lower() but Postgres supports ILIKE
+    # For safety in hybrid envs without knowing exact DB:
+    query = db.query(Booking).filter(func.lower(Booking.status) == "confirmed")
     
     if start_date:
         query = query.filter(Booking.date >= start_date)
@@ -92,21 +94,24 @@ def get_dashboard_stats(db: Session, period: str = "overall"):
     
     # 3. Aggregations
     total_bookings = len(bookings)
+
+    # 4. Get Pricing from Settings
+    settings = db.query(Settings).first()
+    price_per_hour = settings.price_per_hour if settings else 400
     
-    # 4. Revenue Calculation
-    # Rule: (duration_minutes / 60) * 400
+    # 5. Revenue Calculation
+    # Rule: (duration_minutes / 60) * price_per_hour
     total_revenue = 0.0
     for b in bookings:
         # Calculate duration in minutes
         # start_time and end_time are datetime.time objects
-        # We need to convert to datetime to subtract, or just use hour/minute math
         start_dt = datetime.combine(date.min, b.start_time)
         end_dt = datetime.combine(date.min, b.end_time)
         diff = end_dt - start_dt
         duration_minutes = diff.total_seconds() / 60
         
         # Pricing
-        res = (duration_minutes / 60) * 400
+        res = (duration_minutes / 60) * price_per_hour
         total_revenue += res
 
     # Active Customers (unique in this period)

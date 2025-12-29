@@ -18,7 +18,8 @@ def read_settings(db: Session = Depends(get_db)):
             id=0, 
             open_time=time(5, 0), 
             close_time=time(12, 0), 
-            slot_duration=60 
+            slot_duration=60,
+            price_per_hour=400
         )
     return settings
 

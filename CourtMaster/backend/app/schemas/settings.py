@@ -5,6 +5,7 @@ class SettingsBase(BaseModel):
     slot_duration: int
     open_time: time
     close_time: time
+    price_per_hour: int = 400
 
 class SettingsCreate(SettingsBase):
     pass
