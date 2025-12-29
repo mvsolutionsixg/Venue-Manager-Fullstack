@@ -32,16 +32,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Venue Manager API", lifespan=lifespan)
 
+import os
+
 # Cors Root Fix
 origins = [
     "http://localhost:5173",
-    "http://localhost:5174",  # Fallback vite ports
-    "http://localhost:3000",  # Common React port
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
     "https://venue-manager-fullstack.onrender.com",
-    "https://venue-manager-fullstack.onrender.com/", # Trailing slash variant
     "https://venue-manager-frontend.onrender.com",
-    "https://venue-manager-frontend.onrender.com/",
 ]
+
+# Add env allowed origins
+env_origins = os.getenv("ALLOWED_ORIGINS")
+if env_origins:
+    origins.extend([origin.strip() for origin in env_origins.split(",")])    
 
 app.add_middleware(
     CORSMiddleware,
