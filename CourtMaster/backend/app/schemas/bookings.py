@@ -10,6 +10,7 @@ class BookingBase(BaseModel):
     start_time: time
     end_time: time
     status: Optional[str] = "booked"
+    category: Optional[str] = "booking"
 
 class BookingCreate(BookingBase):
     @validator('start_time', 'end_time', pre=True)

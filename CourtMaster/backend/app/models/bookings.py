@@ -12,3 +12,4 @@ class Booking(Base):
     start_time = Column(Time)
     end_time = Column(Time)
     status = Column(String, default="booked")
+    category = Column(String, default="booking")

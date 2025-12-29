@@ -24,6 +24,7 @@ export function BookingCalendar() {
 
     // Form State
     const [customerName, setCustomerName] = useState("");
+    const [category, setCategory] = useState("booking");
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ court: any, time: string } | null>(null);
 
@@ -94,11 +95,13 @@ export function BookingCalendar() {
                 start_time: startParam,
                 end_time: endParam,
                 customer_name: customerName,
-                status: "booked"
+                status: "booked",
+                category: category
             });
 
             setOpenDialog(false);
             setCustomerName("");
+            setCategory("booking");
             fetchData(); // Refresh bookings
             alert("Booking Successful!");
         } catch (error: any) {
@@ -173,6 +176,22 @@ export function BookingCalendar() {
                 </div>
             </div>
 
+            {/* Legend */}
+            <div className="flex items-center space-x-6 px-4 py-1 text-xs text-slate-500">
+                <div className="flex items-center space-x-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                    <span>Booking</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                    <span>Coaching</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                    <span>Event</span>
+                </div>
+            </div>
+
             {/* Calendar Grid */}
             <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex-1 overflow-auto relative">
                 <div className="grid border-b border-slate-200 bg-slate-50 sticky top-0 z-20" style={{ gridTemplateColumns: `80px repeat(${courts.length}, 1fr)` }}>
@@ -200,7 +219,12 @@ export function BookingCalendar() {
                                 return (
                                     <div key={court.id} className="p-1 border-r border-slate-100 last:border-r-0 relative group">
                                         {booking ? (
-                                            <div className="w-full h-full bg-indigo-600 rounded p-1 text-white shadow-sm hover:shadow-md hover:bg-indigo-700 transition-all cursor-default flex items-center overflow-hidden">
+                                            <div className={cn(
+                                                "w-full h-full rounded p-1 text-white shadow-sm hover:shadow-md transition-all cursor-default flex items-center overflow-hidden",
+                                                (booking.category === 'coaching') ? "bg-sky-500 hover:bg-sky-600" :
+                                                    (booking.category === 'event') ? "bg-orange-500 hover:bg-orange-600" :
+                                                        "bg-indigo-600 hover:bg-indigo-700"
+                                            )}>
                                                 <div className="font-semibold text-xs truncate flex items-center">
                                                     <span className="mr-1 opacity-75 text-[10px]">{booking.start_time.substring(0, 5)}</span>
                                                     {booking.customer_name}
@@ -223,6 +247,32 @@ export function BookingCalendar() {
                                                     <DialogHeader>
                                                         <DialogTitle>New Booking</DialogTitle>
                                                     </DialogHeader>
+
+                                                    {/* Category Selection */}
+                                                    <div className="flex gap-2 mb-2">
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => setCategory('booking')}
+                                                            className={cn("flex-1", category === 'booking' ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 shadow-none")}
+                                                        >
+                                                            Booking
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => setCategory('coaching')}
+                                                            className={cn("flex-1", category === 'coaching' ? "bg-sky-500 hover:bg-sky-600 text-white" : "bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 shadow-none")}
+                                                        >
+                                                            Coaching
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => setCategory('event')}
+                                                            className={cn("flex-1", category === 'event' ? "bg-orange-500 hover:bg-orange-600 text-white" : "bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200 shadow-none")}
+                                                        >
+                                                            Event
+                                                        </Button>
+                                                    </div>
+
                                                     <div className="grid gap-6 py-4">
                                                         <div className="grid grid-cols-4 items-center gap-4">
                                                             <Label className="text-right text-slate-500">Court</Label>

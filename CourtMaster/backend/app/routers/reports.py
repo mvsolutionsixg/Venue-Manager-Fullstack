@@ -29,7 +29,7 @@ def export_bookings(
     ws.title = "Bookings Report"
     
     # Headers
-    headers = ["ID", "Customer Name", "Mobile", "Date", "Start Time", "End Time", "Court ID", "Status"]
+    headers = ["ID", "Customer Name", "Mobile", "Date", "Start Time", "End Time", "Court ID", "Status", "Category"]
     ws.append(headers)
     
     # Style Headers
@@ -50,7 +50,8 @@ def export_bookings(
             booking.start_time,
             booking.end_time,
             booking.court_id,
-            booking.status
+            booking.status,
+            getattr(booking, "category", "booking")
         ])
         
     # Auto-adjust column width (approximate)

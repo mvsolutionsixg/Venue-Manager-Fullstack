@@ -102,8 +102,15 @@ def get_dashboard_stats(db: Session, period: str = "overall"):
     
     # 5. Revenue Calculation
     # Rule: (duration_minutes / 60) * price_per_hour
+    # CRITICAL: Only count bookings with category='booking'
     total_revenue = 0.0
     for b in bookings:
+        # Check category (handle None as 'booking' for backward compat if DB update missed active session objects, though script ran)
+        cat = getattr(b, 'category', 'booking')
+        print(f"DEBUG: ID={b.id}, Category={cat}, Status={b.status}")
+        if cat != 'booking':
+            continue
+        
         # Calculate duration in minutes
         # start_time and end_time are datetime.time objects
         start_dt = datetime.combine(date.min, b.start_time)

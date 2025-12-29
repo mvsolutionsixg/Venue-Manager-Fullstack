@@ -192,6 +192,7 @@ export function Bookings() {
                             <TableHead>Customer</TableHead>
                             <TableHead>Court Info</TableHead>
                             <TableHead>Time Slot</TableHead>
+                            <TableHead>Category</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -227,6 +228,16 @@ export function Bookings() {
                                         <div className="text-xs text-slate-500">
                                             {booking.start_time} - {booking.end_time}
                                         </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className={cn(
+                                            "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset capitalize",
+                                            (booking.category === 'coaching') ? "bg-sky-50 text-sky-700 ring-sky-700/10" :
+                                                (booking.category === 'event') ? "bg-orange-50 text-orange-700 ring-orange-700/10" :
+                                                    "bg-purple-50 text-purple-700 ring-purple-700/10"
+                                        )}>
+                                            {booking.category || 'booking'}
+                                        </span>
                                     </TableCell>
                                     <TableCell>
                                         <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20 capitalize">
