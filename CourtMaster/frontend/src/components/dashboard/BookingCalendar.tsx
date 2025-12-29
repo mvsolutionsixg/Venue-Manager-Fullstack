@@ -24,6 +24,8 @@ export function BookingCalendar() {
 
     // Form State
     const [customerName, setCustomerName] = useState("");
+    const [mobile, setMobile] = useState("");
+    const [phoneError, setPhoneError] = useState("");
     const [category, setCategory] = useState("booking");
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState<{ court: any, time: string } | null>(null);
@@ -76,7 +78,15 @@ export function BookingCalendar() {
     };
 
     const handleBooking = async () => {
-        if (!selectedSlot || !customerName) return;
+        if (!selectedSlot || !customerName || !mobile) return;
+
+        // Basic phone validation (numeric, 10-15 digits)
+        const mobileClean = mobile.replace(/\D/g, '');
+        if (mobileClean.length < 10 || mobileClean.length > 15) {
+            setPhoneError("Phone number must be 10-15 digits");
+            return;
+        }
+        setPhoneError("");
 
         try {
             setLoading(true);
@@ -95,12 +105,15 @@ export function BookingCalendar() {
                 start_time: startParam,
                 end_time: endParam,
                 customer_name: customerName,
+                mobile: mobile,
                 status: "booked",
                 category: category
             });
 
             setOpenDialog(false);
             setCustomerName("");
+            setMobile("");
+            setPhoneError("");
             setCategory("booking");
             fetchData(); // Refresh bookings
             alert("Booking Successful!");
@@ -293,6 +306,27 @@ export function BookingCalendar() {
                                                                 onChange={(e) => setCustomerName(e.target.value)}
                                                                 autoFocus
                                                             />
+                                                        </div>
+                                                        <div className="grid grid-cols-4 items-center gap-4">
+                                                            <Label className="text-right text-slate-500">Phone</Label>
+                                                            <div className="col-span-3 space-y-1">
+                                                                <Input
+                                                                    placeholder="Enter mobile number"
+                                                                    className={cn(phoneError && "border-red-500 focus-visible:ring-red-500")}
+                                                                    value={mobile}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        if (val === '' || /^\+?[\d\s-]*$/.test(val)) {
+                                                                            setMobile(val);
+                                                                            if (phoneError) setPhoneError("");
+                                                                        }
+                                                                    }}
+                                                                    maxLength={15}
+                                                                />
+                                                                {phoneError && (
+                                                                    <p className="text-[10px] text-red-500 font-medium">{phoneError}</p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <div className="flex justify-end space-x-2">

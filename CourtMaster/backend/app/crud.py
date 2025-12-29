@@ -182,3 +182,31 @@ def get_monthly_calendar(db: Session, year: int, month: int):
     # But for "Month View Aggregation", let's return the simplified list.
     
     return [{"date": r.date, "count": r.count} for r in results]
+
+def bulk_delete_bookings(db: Session, period: str):
+    today = date.today()
+    start_date = None
+    
+    if period == "weekly":
+        # Start of current week (assuming Monday)
+        start_date = today - timedelta(days=today.weekday())
+    elif period == "monthly":
+        # Start of current month
+        start_date = date(today.year, today.month, 1)
+    elif period == "yearly":
+        # Start of current year
+        start_date = date(today.year, 1, 1)
+    else:
+        raise ValueError("Invalid period")
+
+    # Filter by date range (from start_date to today/end of time)
+    # The requirement says "Delete records from current week/month/year"
+    query = db.query(Booking).filter(Booking.date >= start_date)
+    
+    count = query.count()
+    if count == 0:
+        return 0
+        
+    query.delete(synchronize_session=False)
+    db.commit()
+    return count

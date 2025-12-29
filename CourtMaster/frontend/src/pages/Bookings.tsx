@@ -11,18 +11,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Search } from "lucide-react";
+import { CalendarIcon, Search, Trash2, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export function Bookings() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [search, setSearch] = useState("");
+    const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+    const [bulkDeletePeriod, setBulkDeletePeriod] = useState("weekly");
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     // Debounce search
     useEffect(() => {
@@ -31,6 +44,13 @@ export function Bookings() {
         }, 500);
         return () => clearTimeout(timer);
     }, [date, search]);
+
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -129,6 +149,24 @@ export function Bookings() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (!confirmDelete) return;
+
+        setDeleting(true);
+        try {
+            const res = await api.post(`/bookings/bulk-delete?period=${bulkDeletePeriod}`);
+            setToast({ message: res.data.message, type: res.data.count > 0 ? 'success' : 'error' });
+            setBulkDeleteDialogOpen(false);
+            setConfirmDelete(false);
+            fetchBookings();
+        } catch (err: any) {
+            console.error(err);
+            setToast({ message: err.response?.data?.detail || "Failed to delete data", type: 'error' });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -174,6 +212,89 @@ export function Bookings() {
 
                     {/* Export Actions */}
                     <div className="flex gap-2">
+                        <Dialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 p-2">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Clear Bookings Data</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-6 pt-4">
+                                    <div className="space-y-3">
+                                        <Label className="text-sm font-medium text-slate-700">Select Period</Label>
+                                        <div className="flex flex-col gap-2">
+                                            {[
+                                                { id: 'weekly', label: 'Delete Weekly Bookings' },
+                                                { id: 'monthly', label: 'Delete Monthly Bookings' },
+                                                { id: 'yearly', label: 'Delete Yearly Bookings' }
+                                            ].map((p) => (
+                                                <Button
+                                                    key={p.id}
+                                                    variant="outline"
+                                                    onClick={() => setBulkDeletePeriod(p.id)}
+                                                    className={cn(
+                                                        "justify-start h-12 px-4 border transition-all",
+                                                        bulkDeletePeriod === p.id
+                                                            ? "border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-700 shadow-sm"
+                                                            : "border-slate-200 hover:border-slate-300 bg-white"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "w-4 h-4 rounded-full border flex items-center justify-center mr-3",
+                                                        bulkDeletePeriod === p.id ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
+                                                    )}>
+                                                        {bulkDeletePeriod === p.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                                    </div>
+                                                    <span className="font-medium text-sm">{p.label}</span>
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <p className="text-xs text-slate-500 mb-2 font-medium">Auto-included scopes:</p>
+                                        <div className="flex gap-2">
+                                            {['Booking', 'Coaching', 'Event'].map(scope => (
+                                                <span key={scope} className="px-2 py-0.5 bg-white border border-slate-200 rounded text-[10px] text-slate-600">
+                                                    {scope}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start space-x-3">
+                                        <div className="flex items-center pt-0.5">
+                                            <input
+                                                type="checkbox"
+                                                id="confirm"
+                                                checked={confirmDelete}
+                                                onChange={(e) => setConfirmDelete(e.target.checked)}
+                                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                                            />
+                                        </div>
+                                        <Label htmlFor="confirm" className="text-xs text-slate-600 leading-relaxed cursor-pointer font-normal">
+                                            I understand this action will permanently delete the selected booking, coaching, and event data.
+                                        </Label>
+                                    </div>
+
+                                    <div className="flex justify-end space-x-3 pt-2">
+                                        <Button variant="ghost" onClick={() => setBulkDeleteDialogOpen(false)} disabled={deleting}>
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            onClick={handleBulkDelete}
+                                            disabled={!confirmDelete || deleting}
+                                            className="bg-red-600 hover:bg-red-700 text-white min-w-[100px]"
+                                        >
+                                            {deleting ? "Deleting..." : "Permanently Delete"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
                         <Button variant="outline" className="text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={handleExportExcel}>
                             Excel
                         </Button>
@@ -190,6 +311,7 @@ export function Bookings() {
                         <TableRow className="bg-slate-50/50">
                             <TableHead className="w-[100px]">ID</TableHead>
                             <TableHead>Customer</TableHead>
+                            <TableHead>Mobile Number</TableHead>
                             <TableHead>Court Info</TableHead>
                             <TableHead>Time Slot</TableHead>
                             <TableHead>Category</TableHead>
@@ -216,7 +338,9 @@ export function Bookings() {
                                     <TableCell className="font-medium text-slate-600">#{booking.id}</TableCell>
                                     <TableCell>
                                         <div className="font-medium text-slate-900">{booking.customer_name}</div>
-                                        <div className="text-xs text-slate-500">{booking.mobile || "-"}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="text-sm text-slate-600 font-medium">{booking.mobile || "—"}</div>
                                     </TableCell>
                                     <TableCell>
                                         <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
@@ -260,6 +384,17 @@ export function Bookings() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Custom Toast */}
+            {toast && (
+                <div className={cn(
+                    "fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border animate-in fade-in slide-in-from-bottom-5 duration-300 z-50",
+                    toast.type === 'success' ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-800"
+                )}>
+                    {toast.type === 'success' ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Trash2 className="h-5 w-5 text-red-500" />}
+                    <p className="text-sm font-medium">{toast.message}</p>
+                </div>
+            )}
         </div>
     );
 }
