@@ -85,7 +85,8 @@ def get_dashboard_stats(db: Session, period: str = "overall"):
     # 2. Build Query - Use ILIKE for case insensitive match on status
     # Note: SQLite (if used) might need func.lower() but Postgres supports ILIKE
     # For safety in hybrid envs without knowing exact DB:
-    query = db.query(Booking).filter(func.lower(Booking.status) == "confirmed")
+    display_status = func.lower(Booking.status)
+    query = db.query(Booking).filter(display_status.in_(["confirmed", "booked"]))
     
     if start_date:
         query = query.filter(Booking.date >= start_date)
