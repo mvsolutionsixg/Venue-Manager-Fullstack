@@ -7,11 +7,14 @@ from .database import SessionLocal
 from .models.user import User
 from .services.auth import get_password_hash
 
+from sqlalchemy import text
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Seed database
+    # Startup: Seed database and Migrate
     db = SessionLocal()
     try:
+        # 1. Seed Admin
         user = db.query(User).filter(User.username == "admin").first()
         if not user:
             print("Creating default admin user...")
@@ -20,10 +23,25 @@ async def lifespan(app: FastAPI):
             db.add(user)
             db.commit()
             print("Admin user created.")
-        else:
-            print("Admin user already exists.")
+        
+        # 2. Schema Migration (Auto-fix for missing column)
+        try:
+            # Check if column exists by trying to select it
+            db.execute(text("SELECT price_per_hour FROM settings LIMIT 1"))
+        except Exception:
+            print("Column 'price_per_hour' missing in settings. Migrating...")
+            db.rollback() # Reset transaction after error
+            try:
+                # Add the column
+                db.execute(text("ALTER TABLE settings ADD COLUMN price_per_hour INTEGER DEFAULT 400"))
+                db.commit()
+                print("Migration successful: Added price_per_hour to settings.")
+            except Exception as e:
+                print(f"Migration failed: {e}")
+                db.rollback()
+
     except Exception as e:
-        print(f"Error seeding database: {e}")
+        print(f"Error initializing database: {e}")
     finally:
         db.close()
     
