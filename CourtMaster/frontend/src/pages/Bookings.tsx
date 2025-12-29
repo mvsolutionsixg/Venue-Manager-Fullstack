@@ -15,6 +15,8 @@ import { CalendarIcon, Search } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export function Bookings() {
     const [bookings, setBookings] = useState<any[]>([]);
@@ -70,51 +72,49 @@ export function Bookings() {
         }
     };
 
+
+
     const handleExportPDF = () => {
-        import("jspdf").then(jsPDF => {
-            import("jspdf-autotable").then(() => {
-                const doc = new jsPDF.default();
+        const doc = new jsPDF();
 
-                // Header
-                doc.setFontSize(18);
-                doc.setTextColor(79, 70, 229); // Indigo
-                doc.text("CourtMaster - Booking Report", 14, 22);
+        // Header
+        doc.setFontSize(18);
+        doc.setTextColor(79, 70, 229); // Indigo
+        doc.text("CourtMaster - Booking Report", 14, 22);
 
-                doc.setFontSize(11);
-                doc.setTextColor(100);
-                doc.text(`Generated on: ${format(new Date(), "PPP pp")}`, 14, 30);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${format(new Date(), "PPP pp")}`, 14, 30);
 
-                if (date) {
-                    doc.text(`Filter Date: ${format(date, "PPP")}`, 14, 36);
-                }
+        if (date) {
+            doc.text(`Filter Date: ${format(date, "PPP")}`, 14, 36);
+        }
 
-                // Table
-                const tableColumn = ["ID", "Customer", "Mobile", "Court", "Date", "Time", "Status"];
-                const tableRows: any[] = [];
+        // Table
+        const tableColumn = ["ID", "Customer", "Mobile", "Court", "Date", "Time", "Status"];
+        const tableRows: any[] = [];
 
-                bookings.forEach(booking => {
-                    const bookingData = [
-                        booking.id,
-                        booking.customer_name,
-                        booking.mobile || "-",
-                        `Court ${booking.court_id}`,
-                        booking.date,
-                        `${booking.start_time} - ${booking.end_time}`,
-                        booking.status
-                    ];
-                    tableRows.push(bookingData);
-                });
-
-                (doc as any).autoTable({
-                    head: [tableColumn],
-                    body: tableRows,
-                    startY: 40,
-                    headStyles: { fillColor: [79, 70, 229] }, // Indigo
-                });
-
-                doc.save(`bookings_report_${format(new Date(), "yyyy-MM-dd")}.pdf`);
-            });
+        bookings.forEach(booking => {
+            const bookingData = [
+                booking.id,
+                booking.customer_name,
+                booking.mobile || "-",
+                `Court ${booking.court_id}`,
+                booking.date,
+                `${booking.start_time} - ${booking.end_time}`,
+                booking.status
+            ];
+            tableRows.push(bookingData);
         });
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            headStyles: { fillColor: [79, 70, 229] }, // Indigo
+        });
+
+        doc.save(`bookings_report_${format(new Date(), "yyyy-MM-dd")}.pdf`);
     };
 
     const handleCancel = async (id: number) => {

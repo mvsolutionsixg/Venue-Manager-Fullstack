@@ -11,16 +11,26 @@ export function Dashboard() {
     const [stats, setStats] = useState<any>(null);
     const [charts, setCharts] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [revenuePeriod, setRevenuePeriod] = useState("overall");
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsRes, chartsRes] = await Promise.all([
-                    api.get("/reports/dashboard/stats"),
-                    api.get("/reports/dashboard/charts")
-                ]);
+                // Fetch stats with selected period
+                const statsRes = await api.get("/reports/dashboard/stats", {
+                    params: { period: revenuePeriod }
+                });
+
+                // Fetch charts (only once or separate if needed, but for now keeping together loosely or separate)
+                // To avoid flickering, we can separate them. 
+                // But simplified:
+
+                if (!charts) {
+                    const chartsRes = await api.get("/reports/dashboard/charts");
+                    setCharts(chartsRes.data);
+                }
+
                 setStats(statsRes.data);
-                setCharts(chartsRes.data);
             } catch (error) {
                 console.error("Failed to fetch dashboard data", error);
             } finally {
@@ -28,7 +38,7 @@ export function Dashboard() {
             }
         };
         fetchData();
-    }, []);
+    }, [revenuePeriod]);
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -58,8 +68,25 @@ export function Dashboard() {
                         <DollarSign className="h-4 w-4 text-indigo-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">${stats?.revenue.toLocaleString()}</div>
-                        <p className="text-xs text-slate-500">+4% from last month</p>
+                        <div className="flex flex-col gap-2">
+                            <div className="text-2xl font-bold text-slate-900">₹{stats?.revenue.toLocaleString()}</div>
+
+                            {/* Revenue Tabs */}
+                            <div className="flex bg-slate-100 p-1 rounded-md w-fit">
+                                {["today", "week", "month", "year", "overall"].map((period) => (
+                                    <button
+                                        key={period}
+                                        onClick={() => setRevenuePeriod(period)}
+                                        className={`px-2 py-1 text-[10px] font-medium rounded-sm transition-all capitalize ${revenuePeriod === period
+                                            ? "bg-white text-indigo-600 shadow-sm"
+                                            : "text-slate-500 hover:text-slate-700"
+                                            }`}
+                                    >
+                                        {period === "overall" ? "All" : period}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
                 <Card className="hover:shadow-md transition-shadow">

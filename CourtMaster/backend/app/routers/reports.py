@@ -84,8 +84,8 @@ def export_bookings(
     )
 
 @router.get("/dashboard/stats")
-def dashboard_stats(db: Session = Depends(get_db)):
-    return crud.get_dashboard_stats(db)
+def dashboard_stats(period: str = "overall", db: Session = Depends(get_db)):
+    return crud.get_dashboard_stats(db, period=period)
 
 @router.get("/dashboard/charts")
 def dashboard_charts(db: Session = Depends(get_db)):

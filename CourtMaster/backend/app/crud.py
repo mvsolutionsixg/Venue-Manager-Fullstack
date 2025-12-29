@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import date
+from datetime import date, timedelta, datetime
 from .models import User, Court, Booking, Holiday, Settings
 from .schemas import CreateCourt, CreateBooking, CreateHoliday, CreateSettings
 from .services.auth import get_password_hash
@@ -65,14 +65,56 @@ def delete_booking(db: Session, booking_id: int):
 # Dashboard & Reporting CRUD
 from sqlalchemy import func, extract, cast, Date
 
-def get_dashboard_stats(db: Session):
-    total_bookings = db.query(Booking).count()
-    # Simple revenue calculation ($20/hr estimated for demo)
-    revenue = total_bookings * 20 
-    active_customers = db.query(Booking.customer_name).distinct().count()
+def get_dashboard_stats(db: Session, period: str = "overall"):
+    # 1. Determine date range
+    today = date.today()
+    start_date = None
+    
+    if period == "today":
+        start_date = today
+    elif period == "week":
+        # Start of week (assuming Monday)
+        start_date = today - timedelta(days=today.weekday())
+    elif period == "month":
+        start_date = date(today.year, today.month, 1)
+    elif period == "year":
+        start_date = date(today.year, 1, 1)
+    else:
+        start_date = None # Overall
+        
+    # 2. Build Query
+    query = db.query(Booking).filter(Booking.status == "confirmed")
+    
+    if start_date:
+        query = query.filter(Booking.date >= start_date)
+        
+    bookings = query.all()
+    
+    # 3. Aggregations
+    total_bookings = len(bookings)
+    
+    # 4. Revenue Calculation
+    # Rule: (duration_minutes / 60) * 400
+    total_revenue = 0.0
+    for b in bookings:
+        # Calculate duration in minutes
+        # start_time and end_time are datetime.time objects
+        # We need to convert to datetime to subtract, or just use hour/minute math
+        start_dt = datetime.combine(date.min, b.start_time)
+        end_dt = datetime.combine(date.min, b.end_time)
+        diff = end_dt - start_dt
+        duration_minutes = diff.total_seconds() / 60
+        
+        # Pricing
+        res = (duration_minutes / 60) * 400
+        total_revenue += res
+
+    # Active Customers (unique in this period)
+    active_customers = len(set([b.customer_name for b in bookings]))
+
     return {
         "total_bookings": total_bookings,
-        "revenue": revenue,
+        "revenue": round(total_revenue),
         "active_customers": active_customers
     }
 
