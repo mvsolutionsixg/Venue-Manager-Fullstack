@@ -57,13 +57,23 @@ def delete_booking(booking_id: int, db: Session = Depends(get_db)):
 
 @router.post("/bulk-delete")
 def delete_bookings_bulk(
-    period: str = Query(..., regex="^(weekly|monthly|yearly)$"),
+    params: schemas.BulkDeleteParams,
     db: Session = Depends(get_db)
 ):
     try:
-        count = crud.bulk_delete_bookings(db, period)
+        count = crud.bulk_delete_bookings(
+            db, 
+            params.period, 
+            year=params.year, 
+            month=params.month, 
+            week=params.week
+        )
         if count == 0:
-            return {"message": "No data available for selected period", "count": 0}
+            return {"message": "No booking data found for selected period.", "count": 0}
         return {"message": "Selected booking data deleted successfully", "count": count}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/years", response_model=List[int])
+def get_years(db: Session = Depends(get_db)):
+    return crud.get_booking_years(db)

@@ -29,3 +29,9 @@ class Booking(BookingBase):
 
     class Config:
         orm_mode = True
+
+class BulkDeleteParams(BaseModel):
+    period: str
+    year: Optional[int] = None
+    month: Optional[int] = None
+    week: Optional[int] = None

@@ -33,6 +33,10 @@ export function Bookings() {
     const [search, setSearch] = useState("");
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
     const [bulkDeletePeriod, setBulkDeletePeriod] = useState("weekly");
+    const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+    const [selectedWeek, setSelectedWeek] = useState<number>(1);
+    const [availableYears, setAvailableYears] = useState<number[]>([]);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -44,6 +48,24 @@ export function Bookings() {
         }, 500);
         return () => clearTimeout(timer);
     }, [date, search]);
+
+    useEffect(() => {
+        if (bulkDeleteDialogOpen) {
+            fetchYears();
+        }
+    }, [bulkDeleteDialogOpen]);
+
+    const fetchYears = async () => {
+        try {
+            const res = await api.get("/bookings/years");
+            setAvailableYears(res.data);
+            if (res.data.length > 0 && !res.data.includes(selectedYear)) {
+                setSelectedYear(res.data[0]);
+            }
+        } catch (error) {
+            console.error("Failed to fetch years", error);
+        }
+    };
 
     useEffect(() => {
         if (toast) {
@@ -154,7 +176,12 @@ export function Bookings() {
 
         setDeleting(true);
         try {
-            const res = await api.post(`/bookings/bulk-delete?period=${bulkDeletePeriod}`);
+            const res = await api.post(`/bookings/bulk-delete`, {
+                period: bulkDeletePeriod,
+                year: selectedYear,
+                month: selectedMonth,
+                week: selectedWeek
+            });
             setToast({ message: res.data.message, type: res.data.count > 0 ? 'success' : 'error' });
             setBulkDeleteDialogOpen(false);
             setConfirmDelete(false);
@@ -165,6 +192,54 @@ export function Bookings() {
         } finally {
             setDeleting(false);
         }
+    };
+
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    const getWeeksForMonth = (year: number, month: number) => {
+        const weeks = [];
+        const firstDay = new Date(year, month - 1, 1);
+        const lastDay = new Date(year, month, 0);
+        const daysInMonth = lastDay.getDate();
+
+        for (let i = 0; i < 5; i++) {
+            const start = i * 7 + 1;
+            if (start > daysInMonth) break;
+
+            let end = (i + 1) * 7;
+            if (end > daysInMonth) end = daysInMonth;
+
+            const startFormat = format(new Date(year, month - 1, start), "MMM d");
+            const endFormat = format(new Date(year, month - 1, end), "MMM d");
+
+            weeks.push({
+                id: i + 1,
+                label: `Week ${i + 1} (${startFormat} – ${endFormat})`
+            });
+        }
+        return weeks;
+    };
+
+    const getConfirmationText = () => {
+        if (bulkDeletePeriod === 'weekly') {
+            return `Week ${selectedWeek} of ${months[selectedMonth - 1]} ${selectedYear}`;
+        } else if (bulkDeletePeriod === 'monthly') {
+            return `${months[selectedMonth - 1]} ${selectedYear}`;
+        } else if (bulkDeletePeriod === 'yearly') {
+            return `Year ${selectedYear}`;
+        }
+        return "";
+    };
+
+    const isDeleteDisabled = () => {
+        if (!confirmDelete || deleting) return true;
+        if (bulkDeletePeriod === 'weekly') return !selectedYear || !selectedMonth || !selectedWeek;
+        if (bulkDeletePeriod === 'monthly') return !selectedYear || !selectedMonth;
+        if (bulkDeletePeriod === 'yearly') return !selectedYear;
+        return true;
     };
 
     return (
@@ -231,25 +306,99 @@ export function Bookings() {
                                                 { id: 'monthly', label: 'Delete Monthly Bookings' },
                                                 { id: 'yearly', label: 'Delete Yearly Bookings' }
                                             ].map((p) => (
-                                                <Button
-                                                    key={p.id}
-                                                    variant="outline"
-                                                    onClick={() => setBulkDeletePeriod(p.id)}
-                                                    className={cn(
-                                                        "justify-start h-12 px-4 border transition-all",
-                                                        bulkDeletePeriod === p.id
-                                                            ? "border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-700 shadow-sm"
-                                                            : "border-slate-200 hover:border-slate-300 bg-white"
+                                                <div key={p.id} className="space-y-3">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setBulkDeletePeriod(p.id)}
+                                                        className={cn(
+                                                            "w-full justify-start h-12 px-4 border transition-all",
+                                                            bulkDeletePeriod === p.id
+                                                                ? "border-indigo-600 bg-indigo-50 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-700 shadow-sm"
+                                                                : "border-slate-200 hover:border-slate-300 bg-white"
+                                                        )}
+                                                    >
+                                                        <div className={cn(
+                                                            "w-4 h-4 rounded-full border flex items-center justify-center mr-3",
+                                                            bulkDeletePeriod === p.id ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
+                                                        )}>
+                                                            {bulkDeletePeriod === p.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                                        </div>
+                                                        <span className="font-medium text-sm">{p.label}</span>
+                                                    </Button>
+
+                                                    {bulkDeletePeriod === p.id && (
+                                                        <div className="grid grid-cols-2 gap-3 pl-7 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                            {p.id === 'yearly' && (
+                                                                <div className="col-span-2 space-y-1.5">
+                                                                    <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Select Year</Label>
+                                                                    <select
+                                                                        value={selectedYear}
+                                                                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                                                        className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
+                                                                    >
+                                                                        {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                                                    </select>
+                                                                </div>
+                                                            )}
+                                                            {p.id === 'monthly' && (
+                                                                <>
+                                                                    <div className="space-y-1.5">
+                                                                        <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Select Year</Label>
+                                                                        <select
+                                                                            value={selectedYear}
+                                                                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                                                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
+                                                                        >
+                                                                            {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Select Month</Label>
+                                                                        <select
+                                                                            value={selectedMonth}
+                                                                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                                                                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
+                                                                        >
+                                                                            {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                                                                        </select>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {p.id === 'weekly' && (
+                                                                <>
+                                                                    <div className="space-y-1.5">
+                                                                        <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Select Month</Label>
+                                                                        <select
+                                                                            value={selectedMonth}
+                                                                            onChange={(e) => {
+                                                                                setSelectedMonth(parseInt(e.target.value));
+                                                                                setSelectedWeek(1);
+                                                                            }}
+                                                                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
+                                                                        >
+                                                                            {months.map((m, i) => <option key={m} value={i + 1}>{m} {selectedYear}</option>)}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="space-y-1.5">
+                                                                        <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Select Week</Label>
+                                                                        <select
+                                                                            value={selectedWeek}
+                                                                            onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
+                                                                            className="w-full h-9 rounded-md border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 shadow-sm hover:border-slate-300"
+                                                                        >
+                                                                            {getWeeksForMonth(selectedYear, selectedMonth).map(w => (
+                                                                                <option key={w.id} value={w.id}>{w.label}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            <p className="col-span-2 text-[10px] text-slate-400 font-medium italic mt-1">
+                                                                * Only data from {getConfirmationText()} will be deleted
+                                                            </p>
+                                                        </div>
                                                     )}
-                                                >
-                                                    <div className={cn(
-                                                        "w-4 h-4 rounded-full border flex items-center justify-center mr-3",
-                                                        bulkDeletePeriod === p.id ? "border-indigo-600 bg-indigo-600" : "border-slate-300"
-                                                    )}>
-                                                        {bulkDeletePeriod === p.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                                                    </div>
-                                                    <span className="font-medium text-sm">{p.label}</span>
-                                                </Button>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
@@ -276,7 +425,7 @@ export function Bookings() {
                                             />
                                         </div>
                                         <Label htmlFor="confirm" className="text-xs text-slate-600 leading-relaxed cursor-pointer font-normal">
-                                            I understand this action will permanently delete the selected booking, coaching, and event data.
+                                            I understand this action will permanently delete the selected booking, coaching, and event data for <span className="font-bold text-slate-900">{getConfirmationText()}</span>.
                                         </Label>
                                     </div>
 
@@ -286,7 +435,7 @@ export function Bookings() {
                                         </Button>
                                         <Button
                                             onClick={handleBulkDelete}
-                                            disabled={!confirmDelete || deleting}
+                                            disabled={isDeleteDisabled()}
                                             className="bg-red-600 hover:bg-red-700 text-white min-w-[100px]"
                                         >
                                             {deleting ? "Deleting..." : "Permanently Delete"}

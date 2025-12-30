@@ -183,25 +183,48 @@ def get_monthly_calendar(db: Session, year: int, month: int):
     
     return [{"date": r.date, "count": r.count} for r in results]
 
-def bulk_delete_bookings(db: Session, period: str):
-    today = date.today()
+def bulk_delete_bookings(db: Session, period: str, year: Optional[int] = None, month: Optional[int] = None, week: Optional[int] = None):
     start_date = None
+    end_date = None
     
     if period == "weekly":
-        # Start of current week (assuming Monday)
-        start_date = today - timedelta(days=today.weekday())
+        if not year or not month or not week:
+            raise ValueError("Year, month, and week are required for weekly deletion")
+        # Logic: 7-day chunks starting from the 1st
+        start_date = date(year, month, 1) + timedelta(days=(week-1)*7)
+        end_date = start_date + timedelta(days=6)
+        
+        # Clip end_date to last day of month
+        if month == 12:
+            next_month = date(year + 1, 1, 1)
+        else:
+            next_month = date(year, month + 1, 1)
+        last_day_of_month = next_month - timedelta(days=1)
+        
+        if start_date > last_day_of_month:
+            return 0 # Week out of range for month
+            
+        if end_date > last_day_of_month:
+            end_date = last_day_of_month
+
     elif period == "monthly":
-        # Start of current month
-        start_date = date(today.year, today.month, 1)
+        if not year or not month:
+            raise ValueError("Year and month are required for monthly deletion")
+        start_date = date(year, month, 1)
+        if month == 12:
+            end_date = date(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = date(year, month + 1, 1) - timedelta(days=1)
+            
     elif period == "yearly":
-        # Start of current year
-        start_date = date(today.year, 1, 1)
+        if not year:
+            raise ValueError("Year is required for yearly deletion")
+        start_date = date(year, 1, 1)
+        end_date = date(year, 12, 31)
     else:
         raise ValueError("Invalid period")
 
-    # Filter by date range (from start_date to today/end of time)
-    # The requirement says "Delete records from current week/month/year"
-    query = db.query(Booking).filter(Booking.date >= start_date)
+    query = db.query(Booking).filter(Booking.date >= start_date, Booking.date <= end_date)
     
     count = query.count()
     if count == 0:
@@ -210,3 +233,12 @@ def bulk_delete_bookings(db: Session, period: str):
     query.delete(synchronize_session=False)
     db.commit()
     return count
+
+def get_booking_years(db: Session):
+    # Fetch distinct years from the bookings table
+    results = db.query(extract('year', Booking.date).label('year')).distinct().all()
+    # If no bookings, at least return current year
+    years = sorted([int(r.year) for r in results], reverse=True)
+    if not years:
+        years = [date.today().year]
+    return years
