@@ -201,7 +201,6 @@ export function Bookings() {
 
     const getWeeksForMonth = (year: number, month: number) => {
         const weeks = [];
-        const firstDay = new Date(year, month - 1, 1);
         const lastDay = new Date(year, month, 0);
         const daysInMonth = lastDay.getDate();
 
