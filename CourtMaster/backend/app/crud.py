@@ -3,6 +3,8 @@ from datetime import date, timedelta, datetime
 from .models import User, Court, Booking, Holiday, Settings
 from .schemas import CreateCourt, CreateBooking, CreateHoliday, CreateSettings
 from .services.auth import get_password_hash
+from typing import Optional
+
 
 def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
